@@ -2,8 +2,9 @@
 
 This script:
 1. Verifies that Claude Desktop config exists in the default OS location.
-2. Prompts for Outlook credentials and writes them to a local .env file.
-3. Adds or updates the MCP server entry in claude_desktop_config.json.
+2. Installs required Python packages for this MCP server.
+3. Prompts for Outlook credentials and writes them to a local .env file.
+4. Adds or updates the MCP server entry in claude_desktop_config.json.
 
 Run:
     python install_mcp.py
@@ -15,11 +16,38 @@ import getpass
 import json
 import os
 import platform
+import subprocess
 import sys
 from pathlib import Path
 
-MCP_SERVER_NAME = "word-form-mcp"
+MCP_SERVER_NAME = "automated-form-filler-mcp"
 REQUIRED_ENV_KEYS = ("O365_EMAIL", "O365_PASSWORD")
+
+
+def install_dependencies(project_dir: Path) -> None:
+    """Install required packages from requirements.txt using this Python interpreter."""
+    requirements_path = project_dir / "requirements.txt"
+    if not requirements_path.exists():
+        raise FileNotFoundError(f"requirements.txt not found: {requirements_path}")
+
+    print(f"Installing dependencies from: {requirements_path}")
+    command = [
+        sys.executable,
+        "-m",
+        "pip",
+        "install",
+        "-r",
+        str(requirements_path),
+    ]
+
+    result = subprocess.run(command, capture_output=True, text=True)
+    if result.returncode != 0:
+        stderr = (result.stderr or "").strip()
+        stdout = (result.stdout or "").strip()
+        details = stderr or stdout or "No additional output from pip."
+        raise RuntimeError(f"Dependency installation failed. pip output: {details}")
+
+    print("Dependencies installed successfully.")
 
 
 def get_default_claude_config_path() -> Path:
@@ -135,6 +163,8 @@ def install() -> None:
             "Open Claude Desktop once to generate it, then rerun this installer."
         )
 
+    install_dependencies(project_dir)
+
     credentials = prompt_for_credentials()
     env_path = write_env_file(project_dir, credentials)
 
@@ -160,8 +190,9 @@ def main() -> int:
         print(f"Reason: {exc}")
         print("What to fix:")
         print("1. Ensure Claude Desktop is installed and has generated claude_desktop_config.json.")
-        print("2. Verify this project contains server.py.")
-        print("3. Rerun and provide valid Outlook credentials.")
+        print("2. Verify this project contains server.py and requirements.txt.")
+        print("3. Ensure pip can access packages (internet/proxy) and rerun installer.")
+        print("4. Rerun and provide valid Outlook credentials.")
         return 1
 
 

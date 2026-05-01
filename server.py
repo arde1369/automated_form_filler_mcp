@@ -9,9 +9,16 @@ from mcp.server.stdio import stdio_server
 from mcp.types import Tool, TextContent
 import json
 
-from tools.word_tool import modify_word_form
-from tools.file_tool import save_document
-from tools.email_tool import send_email
+try:
+    # Preferred when modules are organized under tools/ package.
+    from tools.word_tool import modify_word_form
+    from tools.file_tool import save_document
+    from tools.email_tool import send_email
+except ModuleNotFoundError:
+    # Fallback for current flat project layout.
+    from word_tool import modify_word_form
+    from file_tool import save_document
+    from email_tool import send_email
 
 app = Server("word-form-mcp")
 
